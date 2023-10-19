@@ -13,6 +13,11 @@ const LocationSelection = () => {
           </Link>
         ))}
       </div>
+      <div className="mt-5">
+        <Link to={`/staffPortal`}>
+          <button className="btn btn-light">Staff sign in</button>
+        </Link>
+      </div>
     </PageCard>
   );
 };

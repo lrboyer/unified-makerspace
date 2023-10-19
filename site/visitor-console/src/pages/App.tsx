@@ -8,6 +8,8 @@ import SignInSuccess from "./SignInSuccess";
 import SignInError from "./SignInError";
 import NotFoundPage from "./NotFoundPage";
 import VisitForm from "../components/VisitForm";
+import StaffIn from "../components/StaffIn";
+import StaffPortal from "./StaffPortal";
 
 const App = () => {
   return (
@@ -16,6 +18,7 @@ const App = () => {
       <Route path="/register" element={<Registration />} />
       <Route path="/success" element={<SignInSuccess />} />
       <Route path="/error" element={<SignInError />} />
+      <Route path="/staffPortal" element={<StaffPortal />} />
       <Route path="*" element={<NotFoundPage />} />
 
       {/* makerspace specific routes */}
