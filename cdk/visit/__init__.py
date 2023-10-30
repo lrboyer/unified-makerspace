@@ -13,6 +13,7 @@ from aws_cdk import (
 
 from dns import MakerspaceDns
 
+
 class Visit(core.Stack):
     """
     Track visitors to the makerspace via a simple web console.
@@ -35,6 +36,8 @@ class Visit(core.Stack):
                  original_table_name: str,
                  users_table_name: str,
                  visits_table_name: str,
+                 quiz_list_table_name: str,
+                 quiz_progress_table_name: str,
                  *,
                  env: core.Environment,
                  create_dns: bool,
@@ -59,9 +62,9 @@ class Visit(core.Stack):
             original_table_name, visits_table_name, users_table_name, ("https://" + self.domain_name))
         self.register_user_lambda(
             original_table_name, users_table_name, ("https://" + self.domain_name))
+        self.submit_quiz_lambda(
+            quiz_list_table_name, quiz_progress_table_name, users_table_name,  ("https://" + self.domain_name))
         self.test_api_lambda(env=stage)
-
-        
 
     def source_bucket(self):
         self.oai = aws_cloudfront.OriginAccessIdentity(
@@ -75,7 +78,7 @@ class Visit(core.Stack):
                                                    f'visit/console/{self.stage}/')
                                            ],
                                            destination_bucket=self.bucket)
-        
+
     def cloudfront_distribution(self):
 
         kwargs = {}
@@ -145,7 +148,23 @@ class Visit(core.Stack):
             },
             handler='register_user.handler',
             runtime=aws_lambda.Runtime.PYTHON_3_9)
-        
+
+    def submit_quiz_lambda(self, quiz_list_table_name: str, quiz_progress_table_name: str, users_table_name: str, domain_name: str):
+
+        self.lambda_quiz_submit = aws_lambda.Function(
+            self,
+            'RegisterSubmitQuizLambda',
+            function_name=core.PhysicalName.GENERATE_IF_NEEDED,
+            code=aws_lambda.Code.from_asset('visit/lambda_code/submit_quiz'),
+            environment={
+                'DOMAIN_NAME': domain_name,
+                'USERS_TABLE_NAME': users_table_name,
+                'QUIZ_LIST_TABLE_NAME': quiz_list_table_name,
+                'QUIZ_PROGRESS_TABLE_NAME': quiz_progress_table_name
+            },
+            handler='submit_quiz.handler',
+            runtime=aws_lambda.Runtime.PYTHON_3_9)
+
     def test_api_lambda(self, env: str):
 
         self.lambda_api_test = aws_lambda.Function(

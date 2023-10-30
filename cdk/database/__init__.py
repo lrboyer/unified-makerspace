@@ -135,20 +135,20 @@ class Database(core.Stack):
         - SK = quiz_id
 
         """
-        self.quizzes_table = aws_dynamodb.Table(self,
-                                                self.quiz_progress_id,
-                                                point_in_time_recovery=True,
-                                                removal_policy=core.RemovalPolicy.RETAIN,
-                                                partition_key=aws_dynamodb.Attribute(
-                                                    name="username",
-                                                    type=aws_dynamodb.AttributeType.STRING
-                                                ),
-                                                sort_key=aws_dynamodb.Attribute(
-                                                    name="quiz_id",
-                                                    type=aws_dynamodb.AttributeType.STRING
-                                                ),
-                                                billing_mode=aws_dynamodb.BillingMode.PAY_PER_REQUEST,
-                                                time_to_live_attribute="last_updated")
+        self.quiz_progress_table = aws_dynamodb.Table(self,
+                                                      self.quiz_progress_id,
+                                                      point_in_time_recovery=True,
+                                                      removal_policy=core.RemovalPolicy.RETAIN,
+                                                      partition_key=aws_dynamodb.Attribute(
+                                                          name="username",
+                                                          type=aws_dynamodb.AttributeType.STRING
+                                                      ),
+                                                      sort_key=aws_dynamodb.Attribute(
+                                                          name="quiz_id",
+                                                          type=aws_dynamodb.AttributeType.STRING
+                                                      ),
+                                                      billing_mode=aws_dynamodb.BillingMode.PAY_PER_REQUEST,
+                                                      time_to_live_attribute="last_updated")
 
     def dynamodb_quiz_list_table(self):
         """
