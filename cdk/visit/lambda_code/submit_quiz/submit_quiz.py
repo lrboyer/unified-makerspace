@@ -31,14 +31,15 @@ class SubmitQuizFunction():
         self.QUIZ_LIST_TABLE_NAME = os.environ["QUIZ_LIST_TABLE_NAME"]
         if quiz_list_table is None:
             dynamodbresource = boto3.resource('dynamodb')
-            self.users = dynamodbresource.Table(self.QUIZ_LIST_TABLE_NAME)
+            self.quiz_list = dynamodbresource.Table(self.QUIZ_LIST_TABLE_NAME)
         else:
             self.quiz_list = quiz_list_table
 
         self.QUIZ_PROGRESS_TABLE_NAME = os.environ["QUIZ_PROGRESS_TABLE_NAME"]
         if quiz_progress_table is None:
             dynamodbresource = boto3.resource('dynamodb')
-            self.users = dynamodbresource.Table(self.QUIZ_PROGRESS_TABLE_NAME)
+            self.quiz_progress = dynamodbresource.Table(
+                self.QUIZ_PROGRESS_TABLE_NAME)
         else:
             self.quiz_progress = quiz_progress_table
 
@@ -63,7 +64,7 @@ class SubmitQuizFunction():
         if not self.doesQuizExist(quiz_info['quiz_id']):
             quiz_list_response = self.quiz_list.put_item(
                 Item={
-                    'PK': quiz_info['quiz_id']
+                    'quiz_id': quiz_info['quiz_id']
                 }
             )
 
@@ -71,19 +72,13 @@ class SubmitQuizFunction():
 
         # dict for entry into the quiz_progress table
         quiz_progress_item = {
-            'quiz_id': {'S': quiz_info['quiz_id']},
-            'username': {'S': quiz_info['username']},
-            'timestamp': {'N': str(timestamp)},
-            'state': {'S': quiz_info['state']}
+            'quiz_id': quiz_info['quiz_id'],
+            'username': quiz_info['username'],
+            'timestamp': timestamp,
+            'state': quiz_info['state']
         }
 
-        # if the json is from a test request it will have this ttl attribute
-        if "last_updated" in quiz_info:
-            quiz_progress_item['last_updated'] = {
-                "N": str(quiz_info['last_updated'])}
-
-        quiz_progress_table_response = self.dynamodbclient.put_item(
-            TableName=self.QUIZ_PROGRESS_TABLE_NAME,
+        quiz_progress_table_response = self.quiz_progress.put_item(
             Item=quiz_progress_item
         )
 
@@ -105,7 +100,7 @@ class SubmitQuizFunction():
                 })
             }
 
-        # Get all of the user information from the json file
+        # Get all of the quiz information from the json file
         quiz_info = json.loads(request["body"])
         # Call Function
         response = self.add_quiz_info(quiz_info)
