@@ -52,13 +52,28 @@ class SubmitQuizFunction():
         )
         return quiz_list_response['Count'] != 0
 
+    def getUsername(self, email):
+        """
+            Will get an email passed in ex: "lrboyer@clemson.edu
+
+            Needs to return the username
+        """
+        return None
+
+    def getQuizState(self, score):
+        """
+            Will get a score ex: "2 / 10" or "4 / 4"
+
+            Needs to return 1 for all correct ("5 / 5") or 0 for not all correct ("9 / 10")
+        """
+        return None
+
     def add_quiz_info(self, quiz_info):
         """
             Steps for adding quiz info:
-                1. check if user (maybe)
-                2. Check if quiz_id exist in quiz_list
+                1. Check if quiz_id exist in quiz_list
                     - if not -> add quiz_id to quiz_list
-                3. Insert quiz_info into quiz_progress_table
+                2. Insert quiz_info into quiz_progress_table
         """
 
         if not self.doesQuizExist(quiz_info['quiz_id']):
@@ -69,13 +84,15 @@ class SubmitQuizFunction():
             )
 
         timestamp = int(time.time())
+        username = self.getUsername(quiz_info['email'])
+        state = self.getQuizState(quiz_info['score'])
 
         # dict for entry into the quiz_progress table
         quiz_progress_item = {
             'quiz_id': quiz_info['quiz_id'],
-            'username': quiz_info['username'],
+            'username': username,
             'timestamp': timestamp,
-            'state': quiz_info['state']
+            'state': state
         }
 
         quiz_progress_table_response = self.quiz_progress.put_item(
