@@ -43,28 +43,34 @@ class SubmitQuizFunction():
         else:
             self.quiz_progress = quiz_progress_table
 
-    def doesQuizExist(self, quiz_id):
+    def does_quiz_exist(self, quiz_id):
         """
-        true if the quiz is in the quiz list
+            true if the quiz is in the quiz list
         """
         quiz_list_response = self.quiz_list.query(
             KeyConditionExpression=Key('quiz_id').eq(quiz_id)
         )
         return quiz_list_response['Count'] != 0
 
-    def getUsername(self, email):
+    def get_username(self, email):
         """
-            Will get an email passed in ex: "lrboyer@clemson.edu
+            Will get an email passed in ex: "lrboyer@clemson.edu"
 
             Needs to return the username
+
+            input: a string like: "lrboyer@clemson.edu"
+            return: a string of just the username: "lrboyer"
         """
         return None
 
-    def getQuizState(self, score):
+    def get_quiz_state(self, score):
         """
             Will get a score ex: "2 / 10" or "4 / 4"
 
             Needs to return 1 for all correct ("5 / 5") or 0 for not all correct ("9 / 10")
+
+            input: a string like of the quiz score "9 / 10" or "3 / 3"
+            return: 1 if all questions are correct and a 0 if otherwise
         """
         return None
 
@@ -76,7 +82,7 @@ class SubmitQuizFunction():
                 2. Insert quiz_info into quiz_progress_table
         """
 
-        if not self.doesQuizExist(quiz_info['quiz_id']):
+        if not self.does_quiz_exist(quiz_info['quiz_id']):
             quiz_list_response = self.quiz_list.put_item(
                 Item={
                     'quiz_id': quiz_info['quiz_id']
@@ -84,8 +90,8 @@ class SubmitQuizFunction():
             )
 
         timestamp = int(time.time())
-        username = self.getUsername(quiz_info['email'])
-        state = self.getQuizState(quiz_info['score'])
+        username = self.get_username(quiz_info['email'])
+        state = self.get_quiz_state(quiz_info['score'])
 
         # dict for entry into the quiz_progress table
         quiz_progress_item = {
