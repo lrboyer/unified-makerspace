@@ -61,7 +61,13 @@ class SubmitQuizFunction():
             input: a string like: "lrboyer@clemson.edu"
             return: a string of just the username: "lrboyer"
         """
-        return None
+        #split() is used to split the email into two parts based on the '@' symbol
+        userName = email.split('@')
+
+        #return the first part of the email, username
+        return userName[0]
+
+        #return None
 
     def get_quiz_state(self, score):
         """
@@ -72,7 +78,17 @@ class SubmitQuizFunction():
             input: a string like of the quiz score "9 / 10" or "3 / 3"
             return: 1 if all questions are correct and a 0 if otherwise
         """
-        return None
+        #split the score into two parts
+        part = score.split('/')
+
+        correct = int(part[0].strip())
+        total = int([part[1].strip()])
+
+        #check if the all are correct
+        if correct == total:
+            return 1
+        else:
+            return 0
 
     def add_quiz_info(self, quiz_info):
         """
