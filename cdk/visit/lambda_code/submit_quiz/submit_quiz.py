@@ -53,39 +53,22 @@ class SubmitQuizFunction():
         return quiz_list_response['Count'] != 0
 
     def get_username(self, email):
-        """
-            Will get an email passed in ex: "lrboyer@clemson.edu"
-
-            Needs to return the username
-
-            input: a string like: "lrboyer@clemson.edu"
-            return: a string of just the username: "lrboyer"
-        """
-        #split() is used to split the email into two parts based on the '@' symbol
         userName = email.split('@')
 
-        #return the first part of the email, username
         return userName[0]
-
-        #return None
 
     def get_quiz_state(self, score):
         """
-            Will get a score ex: "2 / 10" or "4 / 4"
-
-            Needs to return 1 for all correct ("5 / 5") or 0 for not all correct ("9 / 10")
-
             input: a string like of the quiz score "9 / 10" or "3 / 3"
             return: 1 if all questions are correct and a 0 if otherwise
         """
-        #split the score into two parts
-        part = score.split('/')
+        
+        score = score.split('/')
 
-        correct = int(part[0].strip())
-        total = int([part[1].strip()])
+        userScore = int(score[0].strip())
+        totalScore = int([score[1].strip()])
 
-        #check if the all are correct
-        if correct == total:
+        if userScore == totalScore:
             return 1
         else:
             return 0
