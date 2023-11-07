@@ -59,6 +59,36 @@ accounts = {
         'account': '684082786745',
         'region': 'us-east-1'
     },
+    # Lucas Boyer, Capstone Fall 2023
+    'Dev-lrboyer': {
+        'account': '744918461173',
+        'region': 'us-east-1'
+    },
+    # Sol Lesesne, Capstone Fall 2023
+    'Dev-': {
+        'account': '',
+        'region': 'us-east-1'
+    },
+    # Cameron Boni, Capstone Fall 2023
+    'Dev-': {
+        'account': '',
+        'region': 'us-east-1'
+    },
+    # Susan Li, Capstone Fall 2023
+    'Dev-': {
+        'account': '',
+        'region': 'us-east-1'
+    },
+    # Nayha Hussain, Capstone Fall 2023
+    'Dev-': {
+        'account': '',
+        'region': 'us-east-1'
+    },
+    # Sumanth Pandiri, Capstone Fall 2023
+    'Dev-': {
+        'account': '',
+        'region': 'us-east-1'
+    },
 }
 
 accounts = {
