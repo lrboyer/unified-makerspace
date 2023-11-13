@@ -5,8 +5,7 @@ import os
 import time
 from typing import Tuple
 
-
-class SubmitQuizFunction():
+class QuizFunction():
     """
     This class wraps the function of the lambda so we can more easily test
     it with moto. In production, we will continue to pass the stood-up
@@ -15,18 +14,11 @@ class SubmitQuizFunction():
     dynamodb table.
     """
 
-    def __init__(self, quiz_list_table, quiz_progress_table, users_table, dynamodbclient):
+    def __init__(self, quiz_list_table, quiz_progress_table, dynamodbclient):
         if dynamodbclient is None:
             self.dynamodbclient = boto3.client('dynamodb')
         else:
             self.dynamodbclient = dynamodbclient
-
-        self.USERS_TABLE_NAME = os.environ["USERS_TABLE_NAME"]
-        if users_table is None:
-            dynamodbresource = boto3.resource('dynamodb')
-            self.users = dynamodbresource.Table(self.USERS_TABLE_NAME)
-        else:
-            self.users = users_table
 
         self.QUIZ_LIST_TABLE_NAME = os.environ["QUIZ_LIST_TABLE_NAME"]
         if quiz_list_table is None:
@@ -66,7 +58,7 @@ class SubmitQuizFunction():
         score = score.split('/')
 
         userScore = int(score[0].strip())
-        totalScore = int([score[1].strip()])
+        totalScore = int(score[1].strip())
 
         if userScore == totalScore:
             return 1
@@ -99,14 +91,55 @@ class SubmitQuizFunction():
             'timestamp': timestamp,
             'state': state
         }
+        
+        # if the json is from a test request it will have this ttl attribute
+        if "last_updated" in quiz_info:
+            quiz_progress_item['last_updated'] = {"N":str(quiz_info['last_updated'])}
 
         quiz_progress_table_response = self.quiz_progress.put_item(
             Item=quiz_progress_item
         )
 
         return quiz_progress_table_response['ResponseMetadata']['HTTPStatusCode']
+    
+    def get_quiz_progress(self, username):
+        """
+            Steps for getting user quiz progress:
+                1. Get all quiz_id's from quiz_list
+                2. Retrieve all quiz entries for the user from quiz_progress
+                3. Return list of all quizzes with quiz state
+        """
+        
+        quiz_list_response = self.quiz_list.scan()
+        all_quizzes = quiz_list_response['Items']
 
-    def handle_submit_quiz_request(self, request, context):
+        # Step 2: Query quiz_progress for each quiz to check the user's progress
+        user_quiz_states = {}
+        for quiz in all_quizzes:
+            quiz_id = quiz['quiz_id']
+            quiz_progress_response = self.quiz_progress.query(
+                KeyConditionExpression=Key('username').eq(username) & Key('quiz_id').eq(quiz_id)
+            )
+            if quiz_progress_response['Items']:
+                quiz_data = quiz_progress_response['Items'][0]
+                user_quiz_states[quiz_id] = int(quiz_data['state'])
+            else:
+                # User has not taken this quiz
+                user_quiz_states[quiz_id] = -1
+
+        # Step 3: Compile results
+        user_quiz_progress = []
+        for quiz in all_quizzes:
+            quiz_id = quiz['quiz_id']
+            quiz_info = {
+                'quiz_id': quiz_id,
+                'state': user_quiz_states.get(quiz_id)
+            }
+            user_quiz_progress.append(quiz_info)
+
+        return user_quiz_progress
+        
+    def handle_quiz_request(self, request, context):
         HEADERS = {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Headers': 'Content-Type',
@@ -121,24 +154,49 @@ class SubmitQuizFunction():
                     "Message": "Failed to provide parameters"
                 })
             }
+            
+        method = request.get('httpMethod')
 
-        # Get all of the quiz information from the json file
-        quiz_info = json.loads(request["body"])
-        # Call Function
-        response = self.add_quiz_info(quiz_info)
-        # Send response
-        return {
-            'headers': HEADERS,
-            'statusCode': response
-        }
+        if method == 'POST':
+            quiz_info = json.loads(request["body"])
+            response = self.add_quiz_info(quiz_info)
+            return {
+                'headers': HEADERS,
+                'statusCode': response
+            }
+        elif method == 'GET':
+            username = request.get('pathParameters', {}).get('username')
+            if not username:
+                return {
+                    'headers': HEADERS,
+                    'statusCode': 400,
+                    'body': json.dumps({
+                        "Message": "Username parameter is missing"
+                    })
+                }
 
+            user_quiz_progress = self.get_quiz_progress(username)
+            return {
+                'headers': HEADERS,
+                'statusCode': 200,
+                'body':  json.dumps(user_quiz_progress)
+            }
+        else:
+            return {
+                'headers': HEADERS,
+                'statusCode': 405,
+                'body': json.dumps({
+                    "Message": "Method not allowed"
+                })
+            }
+            
 
-submit_quiz_function = SubmitQuizFunction(None, None, None, None)
+quiz_function = QuizFunction(None, None, None)
 
 
 def handler(request, context):
     # Register quiz information from the makerspace/register console
     # Since this will be hit in prod, it will go ahead and hit our prod
     # dynamodb table
-    return submit_quiz_function.handle_submit_quiz_request(
+    return quiz_function.handle_quiz_request(
         request, context)
