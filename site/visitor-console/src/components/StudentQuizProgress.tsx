@@ -7,8 +7,8 @@ const StudentQuizProgress = () => {
   const [user, setUser] = useState<string | null>(null);
   const [quizzes, setQuizzes] = useState<
     {
-      name: string;
-      status: number;
+      quiz_id: string;
+      state: number;
     }[]
   >([]);
   const [loading, setLoading] = useState(false);
@@ -76,7 +76,7 @@ const StudentQuizProgress = () => {
                 <th className="text-center align-middle">Username</th>
                 {quizzes.map((quiz, index) => (
                   <th className="text-center align-middle" key={index}>
-                    {quiz.name}
+                    {quiz.quiz_id}
                   </th>
                 ))}
               </tr>
@@ -88,16 +88,16 @@ const StudentQuizProgress = () => {
                   <td
                     key={index}
                     className={
-                      quiz.status === 1
+                      quiz.state === 1
                         ? "bg-success text-center align-middle" // Passed
-                        : quiz.status === 0
+                        : quiz.state === 0
                         ? "bg-danger text-center align-middle" // Failed
                         : "text-center align-middle" // Not Attempted
                     }
                   >
-                    {quiz.status === 1
+                    {quiz.state === 1
                       ? "Passed"
-                      : quiz.status === 0
+                      : quiz.state === 0
                       ? "Failed"
                       : "Not Attempted"}
                   </td>
