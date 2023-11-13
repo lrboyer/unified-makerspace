@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import PageCard from "./PageCard";
 import Footer from "../components/Footer";
+import { api_endpoint } from "../library/constants";
 
 const StudentQuizProgress = () => {
   const [searchUsername, setSearchUsername] = useState("");
@@ -13,27 +13,11 @@ const StudentQuizProgress = () => {
   >([]);
   const [loading, setLoading] = useState(false);
 
-  const testQuizData = [
-    { name: "General Safety Quiz", status: -1 },
-    { name: "3D Printer Quiz (FDM)", status: 0 },
-    { name: "3D Printer Quiz (SLA)", status: 1 },
-    { name: "Epilog Laser Quiz", status: -1 },
-    { name: "Glowforge Laser Quiz", status: 1 },
-    { name: "Sticker Printer Quiz", status: 0 },
-    { name: "Vinyl Cutter Quiz", status: -1 },
-    { name: "Fabric Printer Quiz", status: 1 },
-    { name: "Embroidery Machine/Sewing Machine Quiz", status: 0 },
-    { name: "3D Scanner Quiz", status: -1 },
-  ];
-
   const handleSearch = () => {
     // Construct the URL for your API endpoint
-    const apiUrl = `YOUR_API_ENDPOINT/${searchUsername}`;
-
     setLoading(true);
 
-    /*
-    fetch(apiUrl)
+    fetch(`${api_endpoint}/quiz/${searchUsername}`)
       .then((response) => {
         if (!response.ok) {
           throw new Error("Network response was not ok");
@@ -42,17 +26,13 @@ const StudentQuizProgress = () => {
       })
       .then((data) => {
         setQuizzes(data); // Assuming the response data is an array of quiz objects
+        setUser(searchUsername);
         setLoading(false);
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
         setLoading(false);
       });
-
-    */
-    setQuizzes(testQuizData);
-    setUser(searchUsername);
-    setLoading(false);
   };
 
   useEffect(() => {}, []);
