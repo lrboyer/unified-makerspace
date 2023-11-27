@@ -109,11 +109,11 @@ class QuizFunction():
                 2. Retrieve all quiz entries for the user from quiz_progress
                 3. Return list of all quizzes with quiz state
         """
-        
+        # Step 1
         quiz_list_response = self.quiz_list.scan()
         all_quizzes = quiz_list_response['Items']
 
-        # Step 2: Query quiz_progress for each quiz to check the user's progress
+        # Step 2
         user_quiz_states = {}
         for quiz in all_quizzes:
             quiz_id = quiz['quiz_id']
@@ -127,7 +127,7 @@ class QuizFunction():
                 # User has not taken this quiz
                 user_quiz_states[quiz_id] = -1
 
-        # Step 3: Compile results
+        # Step 3 
         user_quiz_progress = []
         for quiz in all_quizzes:
             quiz_id = quiz['quiz_id']
@@ -171,7 +171,7 @@ class QuizFunction():
                     'headers': HEADERS,
                     'statusCode': 400,
                     'body': json.dumps({
-                        "Message": "Username parameter is missing"
+                        "Message": "username parameter is missing"
                     })
                 }
 
