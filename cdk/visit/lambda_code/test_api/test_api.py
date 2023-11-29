@@ -7,6 +7,7 @@ from datetime import datetime
 import json
 import urllib3
 import time
+import pytest
 
 class TestAPIFunction():
     """
@@ -62,14 +63,17 @@ class TestAPIFunction():
         print("Canary Successful for Canary test with username: " + str(register_data_dict["username"]))
         
         return reg_response
-    
-    def test_quiz_api(self, api_url):
+    #Nayha Hussain editing this function 11/13/2023
+    def test_quiz_api(self, api_url, unix_timestamp_for_ttl, dt_string):
         quiz_data_dict = {
-            "quiz_id": "3dPrinter",
-            "username": "smjohn492",
-            "email": "smjohn492@clemson.edu",
-            "score": "10 / 10"
+            "quiz_id": "3dPrinterTesting",
+            "username": "CANARY_TEST_"+dt_string,
+            "email": "CANARY_TEST_@clemson.edu",
+            "score": "10 / 10",
+            "last_updated":(unix_timestamp_for_ttl),
+
         }
+        dt_string = now.strftime("%d/%m/%Y_%H:%M:%S")
 
         quiz_data = json.dumps(quiz_data_dict)
 
@@ -117,7 +121,7 @@ class TestAPIFunction():
         
         # testing quiz api endpoint
         # **** Is it important to delete this testing data from prod db? ************************
-        quiz_post_response = self.test_quiz_api(api_url)
+        quiz_post_response = self.test_quiz_api(api_url, unix_timestamp_for_ttl, dt_string)
 
         status = visit_response.status == 200 and visit_response_unregistered == 200 and reg_response.status == 200 and frontend_response.status == 200 and quiz_post_response == 200
         return status

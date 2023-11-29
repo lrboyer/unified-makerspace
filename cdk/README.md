@@ -18,6 +18,15 @@ directory. To create the virtualenv it assumes that there is a `python3`
 package. If for any reason the automatic creation of the virtualenv fails,
 you can create the virtualenv manually.
 
+Note from 2023 team: Use python version 3.9.13, we have tried other versions and were running into version issues
+
+Note for Windows User: If you have different versions of python installed on your laptop, in your virtual environment, make sure to specify the ENV_DIR variable to pick which version to use. You can also try to use a virtual desktop and download python 3.9.13 and use linux commands.
+
+```
+Examples:
+C:unified-makerspace\.env\.env> ENV_DIR= C:student\AppData\Local\Programs\Python\Python39
+```
+
 To manually create a virtualenv on MacOS and Linux:
 
 ```
