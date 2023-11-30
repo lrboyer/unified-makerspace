@@ -7,6 +7,7 @@ from datetime import datetime
 import json
 import urllib3
 import time
+import pytest
 
 class TestAPIFunction():
     """
@@ -62,13 +63,13 @@ class TestAPIFunction():
         print("Canary Successful for Canary test with username: " + str(register_data_dict["username"]))
         
         return reg_response
-    
-    def test_quiz_api(self, api_url):
+    def test_quiz_api(self, api_url, unix_timestamp_for_ttl, dt_string):
         quiz_data_dict = {
-            "quiz_id": "3dPrinter",
-            "username": "smjohn492",
-            "email": "smjohn492@clemson.edu",
-            "score": "10 / 10"
+            "quiz_id": "3dPrinterTesting",
+            "username": "CANARY_TEST_"+dt_string,
+            "email": "TEST@clemson.edu",
+            "score": "10 / 10",
+            "last_updated":(unix_timestamp_for_ttl),
         }
 
         quiz_data = json.dumps(quiz_data_dict)
@@ -77,8 +78,6 @@ class TestAPIFunction():
 
         if quiz_post_response.status != 200: 
             raise Exception("Quiz API Call Failed")
-
-        #("Canary Successful for Canary test with username: " + str(quiz_data_dict["username"]))
         
         return quiz_post_response
 
@@ -116,8 +115,7 @@ class TestAPIFunction():
         reg_response = self.test_register_api(api_url, unix_timestamp_for_ttl, dt_string)
         
         # testing quiz api endpoint
-        # **** Is it important to delete this testing data from prod db? ************************
-        quiz_post_response = self.test_quiz_api(api_url)
+        quiz_post_response = self.test_quiz_api(api_url, unix_timestamp_for_ttl, dt_string)
 
         status = visit_response.status == 200 and visit_response_unregistered == 200 and reg_response.status == 200 and frontend_response.status == 200 and quiz_post_response == 200
         return status
