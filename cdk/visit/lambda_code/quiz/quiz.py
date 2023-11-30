@@ -107,7 +107,7 @@ class QuizFunction():
             Steps for getting user quiz progress:
                 1. Get all quiz_id's from quiz_list
                 2. Retrieve all quiz entries for the user from quiz_progress
-                3. Return list of all quizzes with quiz state
+                3. Return list of all quizzes with quiz state (1 if 100% correct; 0 otherwise)
         """
         # Step 1
         quiz_list_response = self.quiz_list.scan()

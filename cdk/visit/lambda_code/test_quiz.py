@@ -38,6 +38,15 @@ test_submit_quiz_fail_2 = {
     })
 }
 
+test_get_quiz_progress_1 = {
+    "httpMethod": "GET"
+    "pathParemeters": json.dumps({
+        "quiz_id": 
+        "username":
+    })
+
+}
+
 
 @mock_dynamodb2
 def test_submit_quiz_new_id_pass():
@@ -62,3 +71,56 @@ def test_submit_quiz_existing_id_fail():
     
     
 #NEED TO CREATE TEST CASES FOR TESTING THE GET QUIZZES
+@mock_dynamodb2
+def test_get_quiz_progress():
+    dynamodb_client = boto3.client('dynamodb', region_name='us-east-1')
+    dynamodb_resource = boto3.resource('dynamodb', region_name='us-east-1')
+
+    dynamodb_resource.create_table(
+        TableName='quiz_list',
+        KeySchema=[{'AttributeName': 'quiz_id', 'KeyType': 'HASH'}],
+        AttributeDefinitions=[{'AttributeName': 'quiz_id', 'AttributeType': 'S'}],
+        ProvisionedThroughput={'ReadCapacityUnits': 1, 'WriteCapacityUnits': 1}
+    )
+    dynamodb_resource.create_table(
+        TableName='quiz_progress',
+        KeySchema=[
+            {'AttributeName': 'username', 'KeyType': 'HASH'},
+            {'AttributeName': 'quiz_id', 'KeyType': 'RANGE'}
+        ],
+        AttributeDefinitions=[
+            {'AttributeName': 'username', 'AttributeType': 'S'},
+            {'AttributeName': 'quiz_id', 'AttributeType': 'S'}
+        ],
+        ProvisionedThroughput={'ReadCapacityUnits': 1, 'WriteCapacityUnits': 1}
+    )
+
+    quiz_list_table = dynamodb_resource.Table('quiz_list')
+    quiz_progress_table = dynamodb_resource.Table('quiz_progress')
+    quiz_func = QuizFunction(quiz_list_table, quiz_progress_table, dynamodb_client)
+
+    quiz_list_table.put_item(Item={'quiz_id': 'quiz1'})
+    quiz_list_table.put_item(Item={'quiz_id': 'quiz2'})
+    quiz_list_table.put_item(Item={'quiz_id': 'quiz3'})
+
+    username = 'mock_user'
+    quiz_progress_table.put_item(Item={'username': username, 'quiz_id': 'quiz1', 'state': 1})
+    quiz_progress_table.put_item(Item={'username': username, 'quiz_id': 'quiz2', 'state': 0})
+
+    response = quiz_func.get_quiz_progress(username)
+
+    expected_resp = [
+        {'quiz_id': 'quiz1', 'state': 1},
+        {'quiz_id': 'quiz2', 'state': 0},
+        {'quiz_id': 'quiz3', 'state': -1}  
+    ]
+    assert sorted(response, key=lambda x: x['quiz_id']) == sorted(expected_resp, key=lambda x: x['quiz_id'])
+
+    #username = request.get('pathParameters', {}).get('username')
+
+    # response = get_quiz_progress(test_get_quiz_progress_1)
+    # assert response == [
+    #     {'quiz_id1': 'quiz1', 'state': 1},
+    #     {'quiz_id2': 'quiz2', 'state': 0},
+    #     {'quiz_id3': 'quiz3', 'state': -1},  # Assuming -1 for quizzes not taken
+    # ]
