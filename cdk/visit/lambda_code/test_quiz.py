@@ -38,14 +38,14 @@ test_submit_quiz_fail_2 = {
     })
 }
 
-test_get_quiz_progress_1 = {
+test_get_quiz_progress_pass_1 = {
     "httpMethod": "GET",
     "pathParameters": {
         "username": "test_user"
     }
 }
 
-test_get_quiz_progress_f = {
+test_get_quiz_progress_fail_1 = {
     "httpMethod": "GET",
     "pathParameters": {
     }
@@ -82,12 +82,12 @@ def test_get_quiz_progress_pass():
     quiz_list_table.put_item(Item={'quiz_id': 'quiz2'})
     quiz_list_table.put_item(Item={'quiz_id': 'quiz3'})
 
-    username = test_get_quiz_progress_1["pathParameters"]['username']
+    username = test_get_quiz_progress_pass_1["pathParameters"]['username']
     
     quiz_progress_table.put_item(Item={'username': username, 'quiz_id': 'quiz1', 'state': 1})
     quiz_progress_table.put_item(Item={'username': username, 'quiz_id': 'quiz2', 'state': 0})
 
-    response = QuizFunction(quiz_list_table, quiz_progress_table, client).handle_quiz_request(test_get_quiz_progress_1, None)
+    response = QuizFunction(quiz_list_table, quiz_progress_table, client).handle_quiz_request(test_get_quiz_progress_pass_1, None)
     
     expected_response = [
         {'quiz_id': 'quiz1', 'state': 1},
@@ -109,11 +109,11 @@ def test_get_quiz_progress_fail():
     quiz_list_table.put_item(Item={'quiz_id': 'quiz2'})
     quiz_list_table.put_item(Item={'quiz_id': 'quiz3'})
 
-    username = test_get_quiz_progress_f["pathParameters"]['username']
+    username = "test_user"
     
     quiz_progress_table.put_item(Item={'username': username, 'quiz_id': 'quiz1', 'state': 1})
     quiz_progress_table.put_item(Item={'username': username, 'quiz_id': 'quiz2', 'state': 0})
 
-    response = QuizFunction(quiz_list_table, quiz_progress_table, client).handle_quiz_request(test_get_quiz_progress_f, None)
+    response = QuizFunction(quiz_list_table, quiz_progress_table, client).handle_quiz_request(test_get_quiz_progress_fail_1, None)
     
     assert response['statusCode'] == 400
