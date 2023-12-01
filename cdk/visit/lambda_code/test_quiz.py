@@ -82,12 +82,19 @@ def test_get_quiz_progress():
     quiz_progress_table.put_item(Item={'username': username, 'quiz_id': 'quiz1', 'state': 1})
     quiz_progress_table.put_item(Item={'username': username, 'quiz_id': 'quiz2', 'state': 0})
 
-    response = QuizFunction(quiz_list_table, quiz_progress_table, client).handle_quiz_request(test_get_quiz_progress_1, None)
+    #response = QuizFunction(quiz_list_table, quiz_progress_table, client).handle_quiz_request(test_get_quiz_progress_1, None)
+    
+    response = QuizFunction(quiz_list_table, quiz_progress_table, client).get_quiz_progress(username)
+
     
     expected_response = [
         {'quiz_id': 'quiz1', 'state': 1},
         {'quiz_id': 'quiz2', 'state': 0},
         {'quiz_id': 'quiz3', 'state': -1}  
     ]
+    
+    
     #assert response['statusCode'] == 200
-    assert json.loads(response['body']) == expected_response
+    #assert response['body'] == expected_response
+    
+    assert response == expected_response
