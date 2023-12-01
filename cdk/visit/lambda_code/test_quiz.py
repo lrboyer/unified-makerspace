@@ -45,7 +45,7 @@ test_get_quiz_progress_1 = {
     }
 }
 
-test_get_quiz_progress_fail = {
+test_get_quiz_progress_f = {
     "httpMethod": "GET",
     "pathParameters": {
     }
@@ -73,7 +73,7 @@ def test_submit_quiz_existing_id_fail():
     assert response2['statusCode'] == 200
     
 @mock_dynamodb2
-def test_get_quiz_progress():
+def test_get_quiz_progress_pass():
     client = create_dynamodb_client()
     quiz_list_table = create_test_quiz_list_table(client)
     quiz_progress_table = create_test_quiz_progress_table(client)
@@ -100,7 +100,7 @@ def test_get_quiz_progress():
 
 
 @mock_dynamodb2
-def test_get_quiz_progress():
+def test_get_quiz_progress_fail():
     client = create_dynamodb_client()
     quiz_list_table = create_test_quiz_list_table(client)
     quiz_progress_table = create_test_quiz_progress_table(client)
@@ -109,11 +109,11 @@ def test_get_quiz_progress():
     quiz_list_table.put_item(Item={'quiz_id': 'quiz2'})
     quiz_list_table.put_item(Item={'quiz_id': 'quiz3'})
 
-    username = test_get_quiz_progress_fail["pathParameters"]['username']
+    username = test_get_quiz_progress_f["pathParameters"]['username']
     
     quiz_progress_table.put_item(Item={'username': username, 'quiz_id': 'quiz1', 'state': 1})
     quiz_progress_table.put_item(Item={'username': username, 'quiz_id': 'quiz2', 'state': 0})
 
-    response = QuizFunction(quiz_list_table, quiz_progress_table, client).handle_quiz_request(test_get_quiz_progress_fail, None)
+    response = QuizFunction(quiz_list_table, quiz_progress_table, client).handle_quiz_request(test_get_quiz_progress_f, None)
     
     assert response['statusCode'] == 400
