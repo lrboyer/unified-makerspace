@@ -40,7 +40,7 @@ test_submit_quiz_fail_2 = {
 
 test_get_quiz_progress_1 = {
     "httpMethod": "GET",
-    "pathParemeters": {
+    "pathParameters": {
         "username": "test_user"
     }
 }
@@ -77,15 +77,12 @@ def test_get_quiz_progress():
     quiz_list_table.put_item(Item={'quiz_id': 'quiz2'})
     quiz_list_table.put_item(Item={'quiz_id': 'quiz3'})
 
-    username = test_get_quiz_progress_1["pathParemeters"]['username']
+    username = test_get_quiz_progress_1["pathParameters"]['username']
     
     quiz_progress_table.put_item(Item={'username': username, 'quiz_id': 'quiz1', 'state': 1})
     quiz_progress_table.put_item(Item={'username': username, 'quiz_id': 'quiz2', 'state': 0})
 
-    #response = QuizFunction(quiz_list_table, quiz_progress_table, client).handle_quiz_request(test_get_quiz_progress_1, None)
-    
-    response = QuizFunction(quiz_list_table, quiz_progress_table, client).get_quiz_progress(username)
-
+    response = QuizFunction(quiz_list_table, quiz_progress_table, client).handle_quiz_request(test_get_quiz_progress_1, None)
     
     expected_response = [
         {'quiz_id': 'quiz1', 'state': 1},
@@ -93,8 +90,5 @@ def test_get_quiz_progress():
         {'quiz_id': 'quiz3', 'state': -1}  
     ]
     
-    
-    #assert response['statusCode'] == 200
-    #assert response['body'] == expected_response
-    
-    assert response == expected_response
+    assert response['statusCode'] == 200
+    assert json.loads(response['body']) == expected_response
