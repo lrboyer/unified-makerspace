@@ -63,7 +63,7 @@ accounts = {
     'Dev-lrboyer': {
         'account': '744918461173',
         'region': 'us-east-1'
-    }
+    },
     # Nayha Hussain, Capstone Fall 2023
     'Dev-nayhah': {
         'account': '173876557707',

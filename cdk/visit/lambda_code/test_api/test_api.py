@@ -9,36 +9,67 @@ import urllib3
 import time
 import pytest
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+env = os.environ["ENV"]
+http = urllib3.PoolManager()
+
+frontend_url = ""
+api_url = ""
+
+if env == "Beta":
+    frontend_url = "https://beta-visit.cumaker.space/"
+    api_url = "https://beta-api.cumaker.space/"
+elif env == "Prod":
+    frontend_url = "https://visit.cumaker.space/"
+    api_url = "https://api.cumaker.space/"
+else:
+    raise Exception("Couldn't find Stage")
+
+
 class TestAPIFunction():
     """
     This function will be used to wrap the functionality of the lambda
     so we can more easily test with pytest.
     """
 
-    def __init__(self):
-        self.logger = logging.getLogger()
-        self.logger.setLevel(logging.INFO)
-        self.env = os.environ["ENV"]
-        self.http = urllib3.PoolManager() 
+    @pytest.fixture
+    def unix_timestamp_for_ttl(self):
+        return int(time.time()+120)
 
-    def test_visit_api(self, api_url, unix_timestamp_for_ttl, dt_string):
-        visit_data = {"username":"CANARY_TEST_"+dt_string,"location":"Watt Family Innovation Center","tool":"Visiting","last_updated":(unix_timestamp_for_ttl)}
+    @pytest.fixture
+    def dt_string(self):
+        now = datetime.now()
+        return now.strftime("%d/%m/%Y_%H:%M:%S")
+
+    def test_frontend(self):
+        # Simulates "curl <makerspace_frontend_url> | grep Makerspace Visitor Console" command
+        frontend_response = http.request('GET', str(frontend_url))
+
+        assert frontend_response.status == 200
+        assert b"Makerspace Sign-in" in frontend_response.data
+
+    def test_visit_api(self, unix_timestamp_for_ttl, dt_string):
+        visit_data = {"username": "CANARY_TEST_"+dt_string, "location": "Watt Family Innovation Center",
+                      "tool": "Visiting", "last_updated": (unix_timestamp_for_ttl)}
         visit_data = json.dumps(visit_data)
 
-        visit_response = self.http.request('POST', str(api_url)+"visit",body=visit_data)
+        visit_response = http.request(
+            'POST', str(api_url)+"visit", body=visit_data)
 
-        visit_data_unregistered = {"username":"CANARY_TEST_UNREGISTERED"+dt_string,"location":"Watt Family Innovation Center","tool":"Visiting","last_updated":(unix_timestamp_for_ttl)}
-        visit_data_unregistered  = json.dumps(visit_data_unregistered )
+        visit_data_unregistered = {"username": "CANARY_TEST_UNREGISTERED"+dt_string,
+                                   "location": "Watt Family Innovation Center", "tool": "Visiting", "last_updated": (unix_timestamp_for_ttl)}
+        visit_data_unregistered = json.dumps(visit_data_unregistered)
 
-        visit_response = self.http.request('POST', str(api_url)+"visit",body=visit_data)
-        visit_response_unregistered = self.http.request('POST', str(api_url)+"visit",body=visit_data_unregistered)
+        visit_response = http.request(
+            'POST', str(api_url)+"visit", body=visit_data)
+        visit_response_unregistered = http.request(
+            'POST', str(api_url)+"visit", body=visit_data_unregistered)
 
-        if visit_response.status != 200 or visit_response_unregistered.status != 200:
-            raise Exception("Visit API Call Failed")
-        
-        return visit_response, visit_response_unregistered
-    
-    def test_register_api(self, api_url, unix_timestamp_for_ttl, dt_string):
+        assert visit_response.status == 200
+        assert visit_response_unregistered.status == 200
+
+    def test_register_api(self, unix_timestamp_for_ttl, dt_string):
         register_data_dict = {
             "username": "CANARY_TEST_"+dt_string,
             "firstName": "TEST",
@@ -50,79 +81,91 @@ class TestAPIFunction():
             "GradYear": "2023",
             "Major": ["Mathematical Sciences"],
             "Minor": ["Business Administration"],
-            "last_updated":(unix_timestamp_for_ttl)
+            "last_updated": (unix_timestamp_for_ttl)
         }
 
         register_data = json.dumps(register_data_dict)
 
-        reg_response = self.http.request('POST', str(api_url)+"register",body=register_data)
+        reg_response = http.request('POST', str(
+            api_url)+"register", body=register_data)
 
-        if reg_response.status != 200: 
-            raise Exception("Register API Call Failed")
+        print("Canary Successful for Canary test with username: " +
+              str(register_data_dict["username"]))
 
-        print("Canary Successful for Canary test with username: " + str(register_data_dict["username"]))
-        
-        return reg_response
-    def test_quiz_api(self, api_url, unix_timestamp_for_ttl, dt_string):
+        assert reg_response.status == 200
+
+    def test_quiz_api_post(self, unix_timestamp_for_ttl, dt_string):
         quiz_data_dict = {
             "quiz_id": "3dPrinterTesting",
             "username": "CANARY_TEST_"+dt_string,
-            "email": "TEST@clemson.edu",
+            "email": "CANARY_TEST_@clemson.edu",
             "score": "10 / 10",
-            "last_updated":(unix_timestamp_for_ttl),
+            "last_updated": (unix_timestamp_for_ttl),
         }
 
         quiz_data = json.dumps(quiz_data_dict)
 
-        quiz_post_response = self.http.request('POST', str(api_url) + "quiz", body=quiz_data)
+        quiz_post_response = http.request(
+            'POST', str(api_url) + "quiz", body=quiz_data)
 
-        if quiz_post_response.status != 200: 
-            raise Exception("Quiz API Call Failed")
-        
-        return quiz_post_response
+        assert quiz_post_response.status == 200
 
-    def handle_test_api(self):  
-        # Setting up endpoints based on stage
-        frontend_url = ""
-        api_url = ""
+    def test_quiz_api_get(self, unix_timestamp_for_ttl, dt_string):
+        # The username is created with dt_string and used as a path parameter. dt_string has / so we replace them with -
+        dt_string = dt_string.replace('/', '-')
 
-        if self.env == "Beta":
-            frontend_url = "https://beta-visit.cumaker.space/"
-            api_url = "https://beta-api.cumaker.space/"
-        elif self.env == "Prod":
-            frontend_url = "https://visit.cumaker.space/"
-            api_url = "https://api.cumaker.space/"
-        else:
-            raise Exception("Couldn't find Stage")
-            
-        # Simulates "curl <makerspace_frontend_url> | grep Makerspace Visitor Console" command
-        frontend_response = self.http.request('GET', str(frontend_url))
+        quiz_data_dict_1 = {
+            "quiz_id": "3dPrinterTesting1",
+            "email": "CANARY_TEST_"+dt_string + "@clemson.edu",
+            "score": "10 / 10",
+            "last_updated": (unix_timestamp_for_ttl),
+        }
+        quiz_data_dict_2 = {
+            "quiz_id": "3dPrinterTesting2",
+            "email": "CANARY_TEST_"+dt_string + "@clemson.edu",
+            "score": "10 / 10",
+            "last_updated": (unix_timestamp_for_ttl),
+        }
+        quiz_data_dict_3 = {
+            "quiz_id": "3dPrinterTesting3",
+            "email": "CANARY_TEST_"+dt_string + "@clemson.edu",
+            "score": "5 / 10",
+            "last_updated": (unix_timestamp_for_ttl),
+        }
 
-        if frontend_response.status != 200:
-            raise Exception("Front End Curl Failed")
+        username = "CANARY_TEST_" + dt_string
 
-        if frontend_response.data.find(b"Makerspace Visitor Console") == -1:
-            raise Exception("HTML from Front End Error")
+        quiz_post_response_1 = http.request(
+            'POST', str(api_url) + "quiz", body=json.dumps(quiz_data_dict_1))
+        quiz_post_response_2 = http.request(
+            'POST', str(api_url) + "quiz", body=json.dumps(quiz_data_dict_2))
+        quiz_post_response_3 = http.request(
+            'POST', str(api_url) + "quiz", body=json.dumps(quiz_data_dict_3))
 
-        now = datetime.now()
-        dt_string = now.strftime("%d/%m/%Y_%H:%M:%S")
-        unix_timestamp_for_ttl = int(time.time()+120) # Triggers ttl removal 2 minutes in future 
+        assert quiz_post_response_1.status == 200 and quiz_post_response_2.status == 200 and quiz_post_response_3.status == 200
 
-        # testing visit api endpoint
-        visit_response, visit_response_unregistered = self.test_visit_api(api_url, unix_timestamp_for_ttl, dt_string)
+        quiz_get_response = http.request(
+            'GET', str(api_url) + "quiz/" + username)
 
-        # testing register api endpoint
-        reg_response = self.test_register_api(api_url, unix_timestamp_for_ttl, dt_string)
-        
-        # testing quiz api endpoint
-        quiz_post_response = self.test_quiz_api(api_url, unix_timestamp_for_ttl, dt_string)
+        assert quiz_get_response.status == 200
 
-        status = visit_response.status == 200 and visit_response_unregistered == 200 and reg_response.status == 200 and frontend_response.status == 200 and quiz_post_response == 200
-        return status
-        
-test_api_function = TestAPIFunction()
+        expected_response = [
+            {"quiz_id": "3dPrinterTesting1", "state": 1},
+            {"quiz_id": "3dPrinterTesting2", "state": 1},
+            {"quiz_id": "3dPrinterTesting3", "state": 0}
+        ]
 
-def handler(request, context):
-    return test_api_function.handle_test_api()
+        quiz_progress = json.loads(quiz_get_response.data)
+
+        assert expected_response[0] in quiz_progress and expected_response[
+            1] in quiz_progress and expected_response[2] in quiz_progress
 
 
+def handler(unix_timestamp_for_ttl, dt_string):
+    test_api_function = TestAPIFunction()
+
+    test_api_function.test_frontend()
+    test_api_function.test_visit_api(unix_timestamp_for_ttl, dt_string)
+    test_api_function.test_register_api(unix_timestamp_for_ttl, dt_string)
+    test_api_function.test_quiz_api_get(unix_timestamp_for_ttl, dt_string)
+    test_api_function.test_quiz_api_post(unix_timestamp_for_ttl, dt_string)
