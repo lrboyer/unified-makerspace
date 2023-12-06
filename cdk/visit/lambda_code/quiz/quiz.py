@@ -5,6 +5,7 @@ import os
 import time
 from typing import Tuple
 
+
 class QuizFunction():
     """
     This class wraps the function of the lambda so we can more easily test
@@ -54,7 +55,7 @@ class QuizFunction():
             input: a string like of the quiz score "9 / 10" or "3 / 3"
             return: 1 if all questions are correct and a 0 if otherwise
         """
-        
+
         score = score.split('/')
 
         userScore = int(score[0].strip())
@@ -74,10 +75,16 @@ class QuizFunction():
         """
 
         if not self.does_quiz_exist(quiz_info['quiz_id']):
+            quiz_list_item = {
+                'quiz_id': quiz_info['quiz_id']
+            }
+            # if the json is from a test request it will have this ttl attribute
+            if "last_updated" in quiz_info:
+                quiz_list_item['last_updated'] = {
+                    "N": str(quiz_info['last_updated'])}
+
             quiz_list_response = self.quiz_list.put_item(
-                Item={
-                    'quiz_id': quiz_info['quiz_id']
-                }
+                Item=quiz_list_item
             )
 
         timestamp = int(time.time())
@@ -91,17 +98,18 @@ class QuizFunction():
             'timestamp': timestamp,
             'state': state
         }
-        
+
         # if the json is from a test request it will have this ttl attribute
         if "last_updated" in quiz_info:
-            quiz_progress_item['last_updated'] = {"N":str(quiz_info['last_updated'])}
+            quiz_progress_item['last_updated'] = {
+                "N": str(quiz_info['last_updated'])}
 
         quiz_progress_table_response = self.quiz_progress.put_item(
             Item=quiz_progress_item
         )
 
         return quiz_progress_table_response['ResponseMetadata']['HTTPStatusCode']
-    
+
     def get_quiz_progress(self, username):
         """
             Steps for getting user quiz progress:
@@ -118,7 +126,8 @@ class QuizFunction():
         for quiz in all_quizzes:
             quiz_id = quiz['quiz_id']
             quiz_progress_response = self.quiz_progress.query(
-                KeyConditionExpression=Key('username').eq(username) & Key('quiz_id').eq(quiz_id)
+                KeyConditionExpression=Key('username').eq(
+                    username) & Key('quiz_id').eq(quiz_id)
             )
             if quiz_progress_response['Items']:
                 quiz_data = quiz_progress_response['Items'][0]
@@ -127,7 +136,7 @@ class QuizFunction():
                 # User has not taken this quiz
                 user_quiz_states[quiz_id] = -1
 
-        # Step 3 
+        # Step 3
         user_quiz_progress = []
         for quiz in all_quizzes:
             quiz_id = quiz['quiz_id']
@@ -138,7 +147,7 @@ class QuizFunction():
             user_quiz_progress.append(quiz_info)
 
         return user_quiz_progress
-        
+
     def handle_quiz_request(self, request, context):
         HEADERS = {
             'Content-Type': 'application/json',
@@ -154,7 +163,7 @@ class QuizFunction():
                     "Message": "Failed to provide parameters"
                 })
             }
-            
+
         method = request.get('httpMethod')
 
         if method == 'POST':
@@ -189,7 +198,7 @@ class QuizFunction():
                     "Message": "Method not allowed"
                 })
             }
-            
+
 
 quiz_function = QuizFunction(None, None, None)
 
