@@ -43,14 +43,20 @@ const VisitForm = ({ location }: VisitFormProps) => {
     fetch(`${api_endpoint}/visit`, {
       method: "post",
       body: JSON.stringify(body),
-    }).then((response) => {
-      setLoading(false);
-      if (response.ok) {
-        navigate(`/success?next=/${location.slug}`);
-      } else {
+    })
+      .then((response) => {
+        setLoading(false);
+        if (response.ok) {
+          navigate(`/success?username=${data.username}&next=/${location.slug}`);
+        } else {
+          navigate(`/error?next=/${location.slug}`);
+        }
+      })
+      .catch((error) => {
+        setLoading(false);
+        console.error("Error occurred during fetch:", error);
         navigate(`/error?next=/${location.slug}`);
-      }
-    });
+      });
   };
 
   const reset = () => {

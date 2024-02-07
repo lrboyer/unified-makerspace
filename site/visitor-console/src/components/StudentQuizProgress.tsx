@@ -14,7 +14,6 @@ const StudentQuizProgress = () => {
   const [loading, setLoading] = useState(false);
 
   const handleSearch = () => {
-    // Construct the URL for your API endpoint
     setLoading(true);
 
     fetch(`${api_endpoint}/quiz/${searchUsername}`)
