@@ -13,6 +13,7 @@ from aws_cdk import (
 
 from dns import MakerspaceDns
 
+
 class Visit(core.Stack):
     """
     Track visitors to the makerspace via a simple web console.
@@ -58,14 +59,12 @@ class Visit(core.Stack):
         self.domain_name = self.distribution.domain_name if stage == 'Dev' else self.zones.visit.zone_name
 
         self.log_visit_lambda(
-            original_table_name, visits_table_name, users_table_name, ("https://" + self.domain_name))
+            original_table_name, visits_table_name, users_table_name, quiz_progress_table_name, ("https://" + self.domain_name))
         self.register_user_lambda(
             original_table_name, users_table_name, ("https://" + self.domain_name))
         self.quiz_lambda(
             quiz_list_table_name, quiz_progress_table_name, ("https://" + self.domain_name))
         self.test_api_lambda(env=stage)
-
-        
 
     def source_bucket(self):
         self.oai = aws_cloudfront.OriginAccessIdentity(
@@ -79,7 +78,7 @@ class Visit(core.Stack):
                                                    f'visit/console/{self.stage}/')
                                            ],
                                            destination_bucket=self.bucket)
-        
+
     def cloudfront_distribution(self):
 
         kwargs = {}
@@ -112,7 +111,7 @@ class Visit(core.Stack):
         self.distribution = aws_cloudfront.Distribution(
             self, 'VisitorsConsoleCache', **kwargs)
 
-    def log_visit_lambda(self, original_table_name: str, visits_table_name: str, users_table_name: str, domain_name: str):
+    def log_visit_lambda(self, original_table_name: str, visits_table_name: str, users_table_name: str, quiz_progress_table_name: str, domain_name: str):
 
         sending_authorization_policy = aws_iam.PolicyStatement(
             effect=aws_iam.Effect.ALLOW)
@@ -129,6 +128,7 @@ class Visit(core.Stack):
                 'DOMAIN_NAME': domain_name,
                 'VISITS_TABLE_NAME': visits_table_name,
                 'USERS_TABLE_NAME': users_table_name,
+                'QUIZ_PROGRESS_TABLE_NAME': quiz_progress_table_name
             },
             handler='log_visit.handler',
             runtime=aws_lambda.Runtime.PYTHON_3_9)
@@ -149,7 +149,7 @@ class Visit(core.Stack):
             },
             handler='register_user.handler',
             runtime=aws_lambda.Runtime.PYTHON_3_9)
-        
+
     def quiz_lambda(self, quiz_list_table_name: str, quiz_progress_table_name: str, domain_name: str):
 
         self.lambda_quiz = aws_lambda.Function(
@@ -164,7 +164,7 @@ class Visit(core.Stack):
             },
             handler='quiz.handler',
             runtime=aws_lambda.Runtime.PYTHON_3_9)
-        
+
     def test_api_lambda(self, env: str):
 
         self.lambda_api_test = aws_lambda.Function(

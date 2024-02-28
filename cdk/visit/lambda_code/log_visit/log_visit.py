@@ -17,7 +17,7 @@ class LogVisitFunction():
     so we can more easily test with pytest.
     """
 
-    def __init__(self, original_table, visits_table, users_table, ses_client):
+    def __init__(self, original_table, visits_table, users_table, quiz_progress_table, ses_client):
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)
 
@@ -48,6 +48,15 @@ class LogVisitFunction():
         else:
             self.users = users_table
 
+        if quiz_progress_table is None:
+            dynamodb = boto3.resource('dynamodb')
+
+            QUIZ_PROGRESS_TABLE_NAME = os.environ["QUIZ_PROGRESS_TABLE_NAME"]
+
+            self.quiz_progress = dynamodb.Table(QUIZ_PROGRESS_TABLE_NAME)
+        else:
+            self.quiz_progress = quiz_progress_table
+
         if ses_client is None:
             AWS_REGION = os.environ['AWS_REGION']
             self.client = boto3.client('ses', region_name=AWS_REGION)
@@ -63,8 +72,79 @@ class LogVisitFunction():
         )
         return user_table_response['Count'] != 0
 
+    def doesUserNeedQuizEmail(self, current_user, tool):
+        # TODO: add env variable quiz_list? to lambda
+
+        toolsThatRequireQuiz = [
+            "3D Printer (FDM - Plastic)",
+            "Resin Printer (Formlabs Resin)",
+            "3D Printer (FDM)",
+            "Laser Cutter/Engraver",
+            "Sticker Printer",
+            "Vinyl Cutter",
+            "Fabric Printer",
+            "Embroidery/Sewing Machine",
+            "Button Maker",
+            "3D Scanner",
+            "CNC Mills",
+            "Waterjet",
+        ]
+
+        # TODO: get quiz list from db and somehow make a mapping between tools and quizzes
+        safetyQuizzes = [
+            "Required Safety Quiz",
+            "3D Printing Quiz - FDM",
+            "3D Printing Quiz - SLA",
+            "Sticker Printer Quiz",
+            "Embroidery Machine Quiz",
+            "Othermill CNC Mill Quiz",
+            "Glowforge Laser Quiz",
+            "Epilog Laser Quiz"
+            "Waterjet Quiz",
+        ]
+
+        # tool: quiz
+        toolQuizMapping = {
+            "3D Printer (FDM - Plastic)": "3D Printing Quiz - FDM",
+            "Resin Printer (Formlabs Resin)":  "3D Printing Quiz - SLA",
+            "3D Printer (FDM)": "3D Printing Quiz - FDM",
+            "Laser Cutter/Engraver": "Glowforge Laser Quiz",
+            "Sticker Printer": "Sticker Printer Quiz",
+            # "Fabric Printer": "Sticker Printer Quiz",
+            "Embroidery/Sewing Machine": "Embroidery Machine Quiz",
+            # "3D Scanner": "3D Printing Quiz - FDM",
+            "CNC Mills": "Othermill CNC Mill Quiz",
+            "Waterjet": "Waterjet Quiz",
+        }
+
+        if tool not in toolsThatRequireQuiz:
+            return False
+
+        # TODO: map tool to quiz so can search db for that quiz to see if user has taken
+        quizId = toolQuizMapping.get(tool, "")
+
+        quiz_progress_response = self.quiz_progress.query(
+            KeyConditionExpression=Key('username').eq(
+                current_user) & Key('quiz_id').eq(quizId)
+        )
+
+        if quiz_progress_response['Items']:
+            quiz_data = quiz_progress_response['Items'][0]
+            quizState = int(quiz_data['state'])
+
+            if quizState == 1:
+                # User has passed the quiz
+                return False
+            else:
+                # User has failed the quiz
+                return True
+        else:
+            # User has not taken this quiz
+            return True
+
     # This code was written following the example from:
     # https://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-using-sdk-python.html
+
     def registrationWorkflow(self, current_user):
         # This address must be verified with Amazon SES.
         SENDER = "no-reply@visit.cumaker.space"
@@ -115,6 +195,49 @@ class LogVisitFunction():
             )
 
         # Display an error if something goes wrong.
+        except ClientError as e:
+            self.logger.error(e.response['Error']['Message'])
+
+    def QuizWorkflow(self, current_user, tool):
+        SENDER = "no-reply@visit.cumaker.space"
+
+        email_regex = re.compile(r"[^@]+@[^@]+\.[^@]+")
+        if not email_regex.match(current_user):
+            current_user = current_user + "@clemson.edu"
+
+        RECIPIENT = current_user
+
+        SUBJECT = "Clemson University Makerspace Safety Quiz Required"
+        BODY_TEXT = ("Hello " + current_user + ",\n"
+                     "Our records indicate that you have not passed the required safety quiz for the " + tool + ".\n"
+                     "Please go to cumaker.space/equipment-training/equipment-overview to take the " +
+                     tool + " quiz before using it.\n"
+                     )
+        CHARSET = "UTF-8"
+
+        try:
+            response = self.client.send_email(
+                Destination={
+                    'ToAddresses': [
+                        RECIPIENT,
+                    ],
+                },
+                Message={
+                    'Body': {
+                        'Text': {
+                            'Charset': CHARSET,
+                            'Data': BODY_TEXT,
+                        },
+                    },
+                    'Subject': {
+                        'Charset': CHARSET,
+                        'Data': SUBJECT,
+                    },
+                },
+                ReplyToAddresses=["makerspace@clemson.edu"],
+                Source=SENDER,
+            )
+
         except ClientError as e:
             self.logger.error(e.response['Error']['Message'])
 
@@ -204,6 +327,10 @@ class LogVisitFunction():
         except KeyError:
             self.logger.warning('tool parameter was not provided')
 
+        needQuizEmail = self.doesUserNeedQuizEmail(username, tool)
+        if needQuizEmail:
+            self.QuizWorkflow(username, tool)
+
         try:
             last_updated = body['last_updated']
         except:
@@ -228,7 +355,7 @@ class LogVisitFunction():
         }
 
 
-log_visit_function = LogVisitFunction(None, None, None, None)
+log_visit_function = LogVisitFunction(None, None, None, None, None)
 
 
 def handler(request, context):
